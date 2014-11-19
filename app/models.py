@@ -9,42 +9,6 @@ from flask_login import UserMixin
 from . import login_manager
 
 
-class System(db.Model):
-    __tablename__ = 'systems'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(30), unique=True)
-    sub_systems = db.relationship("SubSystem", secondary='system_subsystem_link')
-
-    def __repr__(self):
-        return self.name
-
-
-class SubSystem(db.Model):
-    __tablename__ = 'sub_systems'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(30))
-    system = relationship(System, secondary='system_subsystem_link')
-
-
-class SystemSubSystemLink(db.Model):
-    __tablename__ = 'system_subsystem_link'
-    system_id = db.Column(db.Integer, db.ForeignKey('systems.id'), primary_key=True)
-    subsystem_id = db.Column(db.Integer, db.ForeignKey('sub_systems.id', primary_key=True))
-
-
-class SystemInterface(db.Model):
-    __tablename__ = 'system_interfaces'
-    id = db.Column(db.Integer, primary_key=True)
-    src_system_id = db.Column(db.Integer, db.ForeignKey('systems.id'))
-    target_system_id = db.Column(db.Integer, db.ForeignKey('systems.id'))
-    src_system = relationship(System, foreign_keys=src_system_id)
-    target_system = relationship(System, foreign_keys=target_system_id)
-
-    function_description_id = db.Column(db.String(256))
-    data_schema = db.Column(db.Text)
-    data_sample = db.Column(db.Text)
-
-
 class User(UserMixin, db.Model):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
@@ -70,6 +34,46 @@ class Role(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(32), unique=True)
     users = db.relationship('User', backref='role')
+
+
+class Vendor(db.Model):
+    __tablename__ = 'vendors'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100))
+
+
+class Product(db.Model):
+    __tablename__ = 'products'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255))
+    sku = db.Column(db.String(255))
+    line_items = db.relationship('LineItem', backref=('product'))
+
+    def __repr__(self):
+        return self.name
+
+
+class LineItem(db.Model):
+    __tablename__ = 'lineitems'
+
+    id = db.Column(db.Integer, primary_key=True)
+    # @todo: unsigned
+    total_price = db.Column(db.Integer)
+    item_price = db.Column(db.Integer)
+    # @todo: unsigned
+    quantity = db.Column(db.Integer)
+    gram = db.Column(db.Integer)
+    product_id = db.Column(db.Integer, db.ForeignKey('products.id'))
+    purchase_id = db.Column(db.Integer, db.ForeignKey('purchases.id'))
+
+
+class Purchase(db.Model):
+    __tablename__ = 'purchases'
+
+    id = db.Column(db.Integer, primary_key=True)
+    operator = db.Column(db.Integer, db.ForeignKey('users.id'))
+    datetime = db.Column(db.DateTime)
+    line_items = db.relationship('LineItem', backref='purchase')
 
 
 @login_manager.user_loader
